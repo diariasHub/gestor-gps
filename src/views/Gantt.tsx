@@ -90,7 +90,6 @@ export function Gantt() {
     e.stopPropagation();
     (e.target as Element).setPointerCapture(e.pointerId);
     setArrastre({ id, modo, x0: e.clientX, dias: 0 });
-    setSeleccion(id);
   };
   const onPointerMove = (e: React.PointerEvent) => {
     if (!arrastre) return;
@@ -105,6 +104,7 @@ export function Gantt() {
     const { id, modo, dias } = arrastre;
     setArrastre(null);
     previsualizar(null);
+    if (dias === 0) setSeleccion(id); // clic sin arrastre: abrir el panel
     if (dias !== 0) {
       const act = datos.actividades.find((a) => a.id === id)!;
       mutar(aplicarArrastre(id, modo, dias), modo === 'mover' ? `Se movió "${act.codigo} ${act.nombre}"` : `Cambió la duración de "${act.codigo} ${act.nombre}"`);
@@ -193,7 +193,7 @@ export function Gantt() {
   };
 
   return (
-    <div>
+    <div style={{ paddingRight: seleccion ? 440 : 0, transition: 'padding-right .2s' }}>
       <Encabezado
         titulo="Planificación y carta Gantt"
         sub={<>Término calculado <b>{fechaCorta(calc.finProyecto)}</b> · comprometido {fechaCorta(p.fechaTerminoPlan)} · corte {fechaCorta(p.fechaCorte)} {calc.desvioPlazo !== null && <> · vs línea base <b style={{ color: calc.desvioPlazo > 0 ? 'var(--crit)' : 'var(--ok)' }}>{calc.desvioPlazo > 0 ? '+' : ''}{calc.desvioPlazo} días hábiles</b></>}</>}
@@ -260,17 +260,14 @@ export function Gantt() {
             })}
           </div>
           <div className="gantt-der" onPointerMove={onPointerMove} onPointerUp={onPointerUp}>
-            <svg ref={svgRef} width={ancho} height={alto + 46} style={{ display: 'block', userSelect: 'none' }}>
-              <defs>
-                <marker id="flecha" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L8,4 L0,8 z" fill="#8a91a8" /></marker>
-                <marker id="flecha-c" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L8,4 L0,8 z" fill="#e5484d" /></marker>
-              </defs>
+            <div className="g-tiempo">
+              <svg width={ancho} height={46} style={{ display: 'block' }}>
               {/* encabezado */}
               <g>
                 <rect x={0} y={0} width={ancho} height={46} fill="#fafbfe" />
                 {meses.map((m, i) => (
                   <g key={i}>
-                    <line x1={m.x} x2={m.x} y1={0} y2={46 + alto} stroke="#dfe2ec" />
+                    <line x1={m.x} x2={m.x} y1={0} y2={46} stroke="#dfe2ec" />
                     <text x={m.x + 6} y={17} fontSize={11.5} fontWeight={600} fill="#4a5070">{m.w > 40 ? m.texto : ''}</text>
                   </g>
                 ))}
@@ -279,7 +276,15 @@ export function Gantt() {
                 ))}
                 <line x1={0} x2={ancho} y1={46} y2={46} stroke="#e2e5ef" />
               </g>
-              <g transform="translate(0,46)">
+              </svg>
+            </div>
+            <svg ref={svgRef} width={ancho} height={alto} style={{ display: 'block', userSelect: 'none' }}>
+              <defs>
+                <marker id="flecha" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L8,4 L0,8 z" fill="#8a91a8" /></marker>
+                <marker id="flecha-c" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L8,4 L0,8 z" fill="#e5484d" /></marker>
+              </defs>
+              {meses.map((m, i) => <line key={i} x1={m.x} x2={m.x} y1={0} y2={alto} stroke="#dfe2ec" />)}
+              <g>
                 {sombras.map((s, i) => <rect key={i} x={s.x} y={0} width={s.w} height={alto} fill={s.feriado ? '#fde8e8' : '#f5f6fa'} />)}
                 {filas.map((f, i) => (
                   <rect key={f.id} x={0} y={yFila(i)} width={ancho} height={ALTO} fill={seleccion === f.id ? 'rgba(122,92,245,.08)' : 'transparent'} stroke="#f0f1f6" />
@@ -338,7 +343,7 @@ export function Gantt() {
                       {verBase && lb && (
                         <rect x={X(lb.inicio)} y={y + 22} width={Math.max(2, X(addDiasCalendario(lb.fin, 1)) - X(lb.inicio))} height={4} fill="#c9cede" rx={2}><title>Línea base {lb.inicio} → {lb.fin}</title></rect>
                       )}
-                      <g onPointerDown={(e) => onPointerDown(e, a.id, 'mover')} onClick={() => setSeleccion(a.id)} style={{ cursor: esAdmin ? 'grab' : 'pointer' }}>
+                      <g onPointerDown={(e) => onPointerDown(e, a.id, 'mover')} onClick={esAdmin ? undefined : () => setSeleccion(a.id)} style={{ cursor: esAdmin ? 'grab' : 'pointer' }}>
                         <rect x={x1} y={y + 7} width={w} height={14} rx={4} fill={color} opacity={0.88} stroke={atrasada ? '#9b1c1c' : 'none'} strokeWidth={atrasada ? 2 : 0} />
                         <rect x={x1} y={y + 7} width={(w * av) / 100} height={14} rx={4} fill="rgba(0,0,0,.32)" />
                         <title>{`${a.codigo} ${a.nombre}\n${prog.inicio} → ${prog.fin} (${prog.duracion} días hábiles)\nAvance ${Math.round(av)} % · holgura ${prog.holgura}\nCosto ${pesos(calc.costoPlan.get(a.id))}`}</title>

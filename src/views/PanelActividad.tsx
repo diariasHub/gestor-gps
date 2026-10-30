@@ -5,7 +5,7 @@ import type { Actividad, Datos, TipoDep } from '../engine/types';
 import { TIPOS_RECURSO } from '../engine/types';
 import { generaCiclo } from '../engine/programacion';
 import { nuevoId } from '../engine/cambios';
-import { Campo, Chip, BarraProgreso, fecha, num, pesos } from '../ui';
+import { Campo, Chip, BarraProgreso, fecha, num, pesos, useEscape } from '../ui';
 
 const TIPOS_DEP: { v: TipoDep; t: string }[] = [
   { v: 'FS', t: 'FS · Fin a Inicio' },
@@ -37,6 +37,7 @@ function Editable({ valor, onConfirmar, tipo = 'text', deshabilitado, min, max }
 
 export function PanelActividad({ id, onCerrar }: { id: string; onCerrar: () => void }) {
   const { datos, calc, mutar, esAdmin, proyectoId } = useStore();
+  useEscape(onCerrar);
   const [errorDep, setErrorDep] = useState<string | null>(null);
   const [nuevaDep, setNuevaDep] = useState<{ predId: string; tipo: TipoDep; desfase: number }>({ predId: '', tipo: 'FS', desfase: 0 });
   const [nuevaAsig, setNuevaAsig] = useState<{ recursoId: string; valor: number }>({ recursoId: '', valor: 0 });
