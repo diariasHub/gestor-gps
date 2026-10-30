@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import { useEffect, type ReactNode } from 'react';
 import { X } from 'lucide-react';
 import type { Semaforo } from './engine/calculo';
 
@@ -50,7 +50,16 @@ export function Campo({ label, children, ayuda, error, className = '' }: { label
   );
 }
 
+export function useEscape(onCerrar: () => void) {
+  useEffect(() => {
+    const f = (e: KeyboardEvent) => { if (e.key === 'Escape') onCerrar(); };
+    window.addEventListener('keydown', f);
+    return () => window.removeEventListener('keydown', f);
+  }, [onCerrar]);
+}
+
 export function Modal({ titulo, onCerrar, children, pie, ancho }: { titulo: ReactNode; onCerrar: () => void; children: ReactNode; pie?: ReactNode; ancho?: number }) {
+  useEscape(onCerrar);
   return (
     <div className="velo" onMouseDown={(e) => e.target === e.currentTarget && onCerrar()}>
       <div className="modal" style={ancho ? { width: `min(${ancho}px, 100%)` } : undefined}>

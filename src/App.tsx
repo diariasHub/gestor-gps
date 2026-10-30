@@ -55,7 +55,7 @@ function PanelImpacto() {
   const { impacto, cerrarImpacto } = useStore();
   useEffect(() => {
     if (!impacto) return;
-    const t = setTimeout(cerrarImpacto, 12000);
+    const t = setTimeout(cerrarImpacto, 8000);
     return () => clearTimeout(t);
   }, [impacto, cerrarImpacto]);
   if (!impacto) return null;
